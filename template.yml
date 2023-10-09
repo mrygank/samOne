@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create a Lambda function
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Resources:
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: shared_Node_Modules
+      Description: Some code to share with the other lambda functions
+      ContentUri: ./layer
+      CompatibleRuntimes:
+        - nodejs16.x
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                - cloudformation:*
+                Resource: '*'
+              - Effect: Allow 
+                Action:
+                - dynamodb:*
+                Resource: '*'
+              - Effect: Allow 
+                Action:
+                - iam:*
+                Resource: '*'
+              - Effect: Allow 
+                Action:
+                - lambda:*
+                Resource: '*'
+
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MyLambdaFunctionone
+      CodeUri: ./handlers/
+      Handler: first.handler
+      Layers: 
+      - !Ref SharedLayer
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: nodejs16.x
+      Timeout: 60
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /testSam
+            Method: post
+          
